@@ -53,7 +53,7 @@ class Recipes extends React.Component {
             <ul className="recipes">
                 {this.props.recipes.map((recipe, index) =>
                     <li className="recipes__recipe" key={index}>
-                        <Recipe recipe={recipe}/>
+                        <Recipe recipe={recipe} removeRecipe={this.props.removeRecipe} index={index} />
                     </li>
                 )}
             </ul>
