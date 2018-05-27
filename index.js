@@ -31,15 +31,81 @@ const recipeList = [{
 
 
 /* --- COMPONENTS --- */
+
+class Form extends React.Component {
+  handleSubmit(e) {
+        // Stop page refreshing
+        e.preventDefault();
+ let refs = this.refs;
+      // Trigger action
+     if (this.props.text == "Add Recipe"){
+
+        let name = refs.name.value;
+        let ingredients = refs.ingredients.value
+        this.props.addRecipe(name, ingredients);
+// Reset form
+        refs.addRecipe.reset();
+        }
+    else{
+
+         let index = this.props.index;
+      let name = refs.name.value;
+        let ingredients = refs.ingredients.value
+        this.props.editRecipe(index, name, ingredients);
+    }
+
+
+
+      this.props.closePopup();
+    }
+  render() {
+    return (
+      <div className='popup'>
+        <div className='popup_inner'>
+          <h1>{this.props.text}</h1>
+          <form  onSubmit={this.handleSubmit.bind(this)}>
+                        <label for="name">Name</label>
+                        <input id="name" type="text" ref="name" placeholder="Egg Sandwich" defaultValue={this.props.name} />
+                        <label for="ingredients">Ingredients</label>
+                        <input id="ingredients" type="text" ref="ingredients" placeholder="bread, egg, mayonese" />
+                        <button type="submit" className="button">{this.props.text}</button>
+                    </form>
+
+        <button onClick={this.props.closePopup}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
+}
+
 class App extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      showPopup: false
+    };
+  }
+  togglePopup() {
+    this.setState({
+      showPopup: !this.state.showPopup
+    });
+  }
     render() {
         return (
             <div>
                 <h1>Recipe Box</h1>
                 <hr/>
-                <AddRecipe addRecipe={this.props.addRecipe} />
+                <button onClick={this.togglePopup.bind(this)}>Add Recipe</button>
                 <hr/>
-                <Recipes recipes={this.props.recipes} removeRecipe={this.props.removeRecipe}  />
+             {this.state.showPopup ?
+          <Form
+            text='Add Recipe'
+            addRecipe={this.props.addRecipe}
+            closePopup={this.togglePopup.bind(this)}
+          />
+          : null
+        }
+                <Recipes recipes={this.props.recipes} removeRecipe={this.props.removeRecipe}  editRecipe={this.props.editRecipe} togglePopup={this.togglePopup.bind(this)} showPopup={this.state.showPopup} />
             </div>
         )
     }
@@ -53,7 +119,7 @@ class Recipes extends React.Component {
             <ul className="recipes">
                 {this.props.recipes.map((recipe, index) =>
                     <li className="recipes__recipe" key={index}>
-                        <Recipe recipe={recipe} removeRecipe={this.props.removeRecipe} index={index} />
+                        <Recipe recipe={recipe} removeRecipe={this.props.removeRecipe} editRecipe={this.props.editRecipe} index={index} togglePopup={this.props.togglePopup} showPopup={this.props.showPopup} />
                     </li>
                 )}
             </ul>
@@ -62,33 +128,29 @@ class Recipes extends React.Component {
 }
 
 class AddRecipe extends React.Component {
-    handleSubmit(e) {
-        // Stop page refreshing
-        e.preventDefault();
 
-        let refs = this.refs;
-        let name = refs.name.value;
-        let ingredients = refs.ingredients.value
-
-        // Trigger action
-        this.props.addRecipe(name, ingredients);
-
-        // Reset form
-        refs.addRecipe.reset();
-    }
     render() {
         return (
             <div className="row">
                 <div className="medium-6 medium-offset-3 columns">
-                    <form ref="addRecipe" onSubmit={this.handleSubmit.bind(this)}>
-                        <label for="name">Name</label>
-                        <input id="name" type="text" ref="name" placeholder="Egg Sandwich" />
-                        <label for="ingredients">Ingredients</label>
-                        <input id="ingredients" type="text" ref="ingredients" placeholder="bread, egg, mayonese" />
-                        <button type="submit" className="button">Add Recipe</button>
-                    </form>
+
                 </div>
             </div>
+        )
+    }
+}
+
+class EditRecipe extends React.Component {
+    handleOnClick() {
+        let index = this.props.index;
+
+        this.props.editRecipe(index);
+    }
+    render() {
+        return (
+<div>
+
+  </div>
         )
     }
 }
@@ -119,6 +181,19 @@ state = { showing: false };
               {this.props.recipe.ingredients}
               <br /><br />
   <RemoveRecipe removeRecipe={this.props.removeRecipe} index={this.props.index} />
+
+              <button onClick={this.props.togglePopup}>Edit Recipe</button>
+              <hr />
+             {this.props.showPopup ?
+          <Form
+            text='Edit Recipe'
+            editRecipe={this.props.editRecipe}
+            closePopup={this.props.togglePopup}
+            index={this.props.index}
+          />
+          : null
+        }
+
             </p>
             </div>
 
@@ -129,7 +204,7 @@ state = { showing: false };
 
 /* --- REDUCERS --- */
 function reducer(state = [], action) {
-    switch (action.type) {
+     switch (action.type) {
         case 'ADD_RECIPE':
             // Return a new array with old state and added attendee.
             return [{
@@ -137,6 +212,17 @@ function reducer(state = [], action) {
                     ingredients: action.ingredients
                 },
                 ...state
+            ];
+        case 'EDIT_RECIPE':
+         console.log("action.index: " + action.index);
+               console.log("action");
+         console.log(action);
+    obj2={ingredients: action.ingredients, name: action.name};
+
+            return [
+              ...state.slice(0, action.index),
+               Object.assign({}, ...state, obj2),
+   ...state.slice(action.index + 1)
             ];
         case 'REMOVE_RECIPE':
             return [
@@ -157,6 +243,14 @@ const actions = {
         return {
             type: 'ADD_RECIPE',
             id: uuid.v4(),
+            name,
+            ingredients
+        }
+    },
+   editRecipe: (index, name, ingredients) => {
+        return {
+            type: 'EDIT_RECIPE',
+            index,
             name,
             ingredients
         }
